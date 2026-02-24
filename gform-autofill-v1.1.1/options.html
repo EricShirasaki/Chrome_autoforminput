@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GForm AutoFill — プロフィール設定</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', 'Noto Sans JP', 'Hiragino Kaku Gothic ProN', sans-serif;
+      background: #f0f2f5;
+      color: #333;
+      min-height: 100vh;
+    }
+
+    .page-header {
+      background: linear-gradient(135deg, #4285f4, #0d6efd);
+      color: white;
+      padding: 20px 32px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .page-header-icon { font-size: 28px; }
+
+    .page-header h1 {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .page-header p {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 2px;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 32px auto;
+      padding: 0 16px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 24px 28px;
+      margin-bottom: 20px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    .card-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #4285f4;
+      margin-bottom: 18px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e8f0fe;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* APIキーカード専用スタイル */
+    .card-title.api { color: #6f42c1; border-bottom-color: #ede7f6; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .form-group.full-width { grid-column: 1 / -1; }
+
+    label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #555;
+    }
+
+    label .optional {
+      color: #aaa;
+      font-size: 11px;
+      font-weight: 400;
+      margin-left: 4px;
+    }
+
+    input[type="text"],
+    input[type="email"],
+    input[type="tel"],
+    input[type="password"] {
+      padding: 9px 12px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      font-size: 14px;
+      color: #333;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+      background: #fafafa;
+      font-family: inherit;
+    }
+
+    input:focus {
+      border-color: #4285f4;
+      box-shadow: 0 0 0 3px rgba(66,133,244,0.12);
+      background: white;
+    }
+
+    input[type="password"]:focus {
+      border-color: #6f42c1;
+      box-shadow: 0 0 0 3px rgba(111,66,193,0.12);
+    }
+
+    input::placeholder { color: #bbb; }
+
+    .hint {
+      font-size: 11px;
+      color: #999;
+      margin-top: 2px;
+      line-height: 1.5;
+    }
+
+    .hint a { color: #4285f4; }
+
+    .divider {
+      border: none;
+      border-top: 1px solid #f0f0f0;
+      margin: 6px 0 16px;
+    }
+
+    /* APIキー入力欄の表示切替ボタン */
+    .api-key-wrapper {
+      position: relative;
+    }
+
+    .api-key-wrapper input {
+      width: 100%;
+      padding-right: 44px;
+    }
+
+    .btn-toggle-visibility {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      color: #888;
+      padding: 2px;
+    }
+
+    /* APIキーステータスバッジ */
+    .api-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+
+    .api-status.ok      { background: #d4edda; color: #155724; }
+    .api-status.missing { background: #fff3cd; color: #856404; }
+    .api-status.error   { background: #f8d7da; color: #721c24; }
+
+    /* コスト情報ボックス */
+    .cost-info {
+      background: #f3e8ff;
+      border: 1px solid #d8b4fe;
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #5b21b6;
+      line-height: 1.7;
+      margin-top: 14px;
+    }
+
+    .cost-info table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    .cost-info td {
+      padding: 2px 8px 2px 0;
+      font-size: 12px;
+    }
+
+    .cost-info td:last-child {
+      text-align: right;
+      font-weight: 600;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 8px;
+    }
+
+    .btn {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #4285f4, #0d6efd);
+      color: white;
+      box-shadow: 0 2px 6px rgba(66,133,244,0.3);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #3367d6, #0b5ed7);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: white;
+      color: #666;
+      border: 1px solid #ddd;
+    }
+
+    .btn-secondary:hover { background: #f5f5f5; }
+
+    .btn-danger {
+      background: white;
+      color: #dc3545;
+      border: 1px solid #f5c6cb;
+    }
+
+    .btn-danger:hover { background: #fff5f5; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: #28a745;
+      color: white;
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.error { background: #dc3545; }
+    .toast.warning { background: #ffc107; color: #333; }
+
+    .info-box {
+      background: #e8f0fe;
+      border-left: 4px solid #4285f4;
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13px;
+      color: #1a56db;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <div class="page-header-icon">📋</div>
+    <div>
+      <h1>GForm AutoFill — プロフィール設定</h1>
+      <p>Googleフォームに自動入力する個人情報とOpenAI APIキーを登録します。</p>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="info-box">
+      💡 登録した情報はすべてブラウザ内にのみ保存されます。外部サーバーへの送信は一切行いません。<br>
+      OpenAI APIキーはフォームのラベルをAIで解析するためだけに使用されます（1回あたり約0.015円）。
+    </div>
+
+    <form id="profileForm">
+
+      <!-- OpenAI APIキー設定 -->
+      <div class="card">
+        <div class="card-title api">🤖 OpenAI APIキー設定</div>
+
+        <div class="form-group">
+          <label>OpenAI APIキー</label>
+          <div class="api-key-wrapper">
+            <input type="password" id="openaiApiKey" name="openaiApiKey"
+                   placeholder="sk-..." autocomplete="off" />
+            <button type="button" class="btn-toggle-visibility" id="btnToggleKey" title="表示/非表示">👁</button>
+          </div>
+          <span class="hint">
+            APIキーは <a href="https://platform.openai.com/api-keys" target="_blank">OpenAI Platform</a> から取得できます。
+            「sk-」で始まる文字列です。
+          </span>
+          <div id="apiStatus"></div>
+        </div>
+
+        <div class="cost-info">
+          <strong>💰 コスト目安（gpt-4.1-nano 使用）</strong>
+          <table>
+            <tr><td>1回のフォーム入力あたり</td><td>約 0.015 円</td></tr>
+            <tr><td>月10回利用</td><td>約 0.15 円/月</td></tr>
+            <tr><td>月100回利用</td><td>約 1.5 円/月</td></tr>
+            <tr><td>月1,000回利用</td><td>約 15 円/月</td></tr>
+          </table>
+          <div style="margin-top:6px; font-size:11px; opacity:0.8;">
+            ※ gpt-4.1-nanoは入力$0.10/1Mトークン・出力$0.40/1Mトークン（2025年時点）
+          </div>
+        </div>
+      </div>
+
+      <!-- 氏名 -->
+      <div class="card">
+        <div class="card-title">👤 氏名</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>姓（苗字）<span class="optional">任意</span></label>
+            <input type="text" id="lastName" placeholder="例: 田中" />
+          </div>
+          <div class="form-group">
+            <label>名（名前）<span class="optional">任意</span></label>
+            <input type="text" id="firstName" placeholder="例: 太郎" />
+          </div>
+          <div class="form-group full-width">
+            <label>氏名（フルネーム）<span class="optional">任意</span></label>
+            <input type="text" id="fullName" placeholder="例: 田中 太郎（姓と名の間にスペース）" />
+            <span class="hint">姓・名を別々に入力した場合は自動生成されます。</span>
+          </div>
+        </div>
+
+        <hr class="divider" />
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>姓（フリガナ）<span class="optional">任意</span></label>
+            <input type="text" id="lastNameKana" placeholder="例: タナカ" />
+          </div>
+          <div class="form-group">
+            <label>名（フリガナ）<span class="optional">任意</span></label>
+            <input type="text" id="firstNameKana" placeholder="例: タロウ" />
+          </div>
+          <div class="form-group full-width">
+            <label>氏名（フリガナ・フルネーム）<span class="optional">任意</span></label>
+            <input type="text" id="fullNameKana" placeholder="例: タナカ タロウ" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 連絡先 -->
+      <div class="card">
+        <div class="card-title">📞 連絡先</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>電話番号<span class="optional">任意</span></label>
+            <input type="tel" id="phone" placeholder="例: 090-1234-5678" />
+          </div>
+          <div class="form-group">
+            <label>メールアドレス<span class="optional">任意</span></label>
+            <input type="email" id="email" placeholder="例: taro@example.com" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 住所 -->
+      <div class="card">
+        <div class="card-title">🏠 住所</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>郵便番号<span class="optional">任意</span></label>
+            <input type="text" id="postalCode" placeholder="例: 819-0382" />
+          </div>
+          <div class="form-group">
+            <label>都道府県<span class="optional">任意</span></label>
+            <input type="text" id="prefecture" placeholder="例: 福岡県" />
+          </div>
+          <div class="form-group">
+            <label>市区町村<span class="optional">任意</span></label>
+            <input type="text" id="city" placeholder="例: 福岡市西区" />
+          </div>
+          <div class="form-group">
+            <label>番地・建物名<span class="optional">任意</span></label>
+            <input type="text" id="addressLine" placeholder="例: 桑原674 ドミトリー3 206号" />
+          </div>
+          <div class="form-group full-width">
+            <label>住所（フルテキスト）<span class="optional">任意</span></label>
+            <input type="text" id="fullAddress" placeholder="例: 福岡県福岡市西区桑原674 ドミトリー3 206号" />
+            <span class="hint">「住所」一行入力のフォームに使用。上記の各パーツから自動生成も可能です。</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 所属・その他 -->
+      <div class="card">
+        <div class="card-title">🏢 所属・その他</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>所属・会社名・学校名<span class="optional">任意</span></label>
+            <input type="text" id="organization" placeholder="例: 九州大学" />
+          </div>
+          <div class="form-group">
+            <label>部署・学部・学科<span class="optional">任意</span></label>
+            <input type="text" id="department" placeholder="例: 工学部情報工学科" />
+          </div>
+          <div class="form-group">
+            <label>年齢<span class="optional">任意</span></label>
+            <input type="text" id="age" placeholder="例: 21" />
+          </div>
+          <div class="form-group">
+            <label>生年月日<span class="optional">任意</span></label>
+            <input type="text" id="birthday" placeholder="例: 2003/04/01" />
+          </div>
+          <div class="form-group">
+            <label>性別<span class="optional">任意</span></label>
+            <input type="text" id="gender" placeholder="例: 男性" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ボタン -->
+      <div class="card">
+        <div class="btn-row">
+          <button type="button" class="btn btn-danger" id="btnClear">🗑️ データを消去</button>
+          <button type="button" class="btn btn-secondary" id="btnExport">📤 エクスポート</button>
+          <button type="button" class="btn btn-secondary" id="btnImport">📥 インポート</button>
+          <button type="submit" class="btn btn-primary">💾 保存する</button>
+        </div>
+        <input type="file" id="importFile" accept=".json" style="display:none;" />
+      </div>
+
+    </form>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="options.js"></script>
+</body>
+</html>
